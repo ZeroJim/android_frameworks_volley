@@ -25,7 +25,7 @@ public final class PhoneUtil {
         final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "");
         final String A1OS_URL = A1OS_API + PHONENUMBER_COMPLETE;
         
-        dbHelper = new StuDBHelper(ctx, "cloud_db", null, VERSION);
+        dbHelper = new DBHelper(ctx, "cloud_db", null, VERSION);
         db = dbHelper.getReadableDatabase();
         
         if (query(PHONENUMBER_COMPLETE) != null) {
