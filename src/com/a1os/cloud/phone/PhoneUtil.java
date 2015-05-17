@@ -15,8 +15,7 @@ import android.util.Log;
 public final class PhoneUtil {
 
     static String A1OS_API = "http://www.aoidone.com/api/cloud_data.php?number=";
-
-    static StringBuilder resultBuilder = new StringBuilder();
+    static int VERSION = 1;
     
     static DBHelper dbHelper;
     static SQLiteDatabase db;
@@ -26,7 +25,7 @@ public final class PhoneUtil {
         final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "");
         final String A1OS_URL = A1OS_API + PHONENUMBER_COMPLETE;
         
-        dbHelper = new StuDBHelper(ctx,"cloud_db",null,1);
+        dbHelper = new StuDBHelper(ctx, "cloud_db", null, VERSION);
         db = dbHelper.getReadableDatabase();
         
         if (query(PHONENUMBER_COMPLETE) != null) {
@@ -41,8 +40,8 @@ public final class PhoneUtil {
            new Response.Listener<String>() {
               @Override
               public void onResponse(String response) {
-            	  callBack.execute(response);
-            	  ContentValues cv = new ContentValues();
+                  callBack.execute(response);
+                  ContentValues cv = new ContentValues();
                   cv.put("phone", PHONENUMBER_COMPLETE);
                   cv.put("location", response);
                   db.insert("cloud_table", null, cv);
@@ -57,10 +56,11 @@ public final class PhoneUtil {
         mQueue.add(stringRequest);
     }
 
-    public static String query(String phonen) {
-    	Cursor cursor = db.query("cloud_table", new String[]{"phone","location"},null,null, null, null, null);
+    public static String query(String Number) {
+    	Cursor cursor = db.query("cloud_table", new String[]{"phone", "location"},
+                 null, null, null, null, null);
     	while(cursor.moveToNext()){
-              if (phonen.equals(cursor.getString(cursor.getColumnIndex("phone")))) {
+              if (Number.equals(cursor.getString(cursor.getColumnIndex("phone")))) {
                   return cursor.getString(cursor.getColumnIndex("location"));
               }
         }

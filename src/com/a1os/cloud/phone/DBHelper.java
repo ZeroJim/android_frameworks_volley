@@ -8,10 +8,9 @@ import android.util.Log;
  
 public class DBHelper extends SQLiteOpenHelper {
 
-    private static final String TAG = "TestSQLite";
-    public static final int VERSION = 1;
+    private static final String TAG = "DBHelper";
 
-    public StuDBHelper(Context context, String name, CursorFactory factory, int version) {
+    public DBHelper(Context context, String name, CursorFactory factory, int version) {
         super(context, name, factory, version);
     }
 
