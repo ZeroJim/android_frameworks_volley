@@ -1,9 +1,10 @@
 package com.a1os.cloud.phone;
 
+import com.a1os.cloud.request.CloudRequest;
+
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import android.content.ContentValues;
@@ -27,16 +28,15 @@ public final class PhoneUtil {
         
         dbHelper = new DBHelper(ctx, "cloud_db", null, VERSION);
         db = dbHelper.getReadableDatabase();
-        
+
         if (query(PHONENUMBER_COMPLETE) != null) {
             callBack.execute(query(PHONENUMBER_COMPLETE));
-            db.close();
             return;
         }
 
         RequestQueue mQueue = Volley.newRequestQueue(ctx);
 
-        StringRequest stringRequest = new StringRequest(A1OS_URL,
+        CloudRequest stringRequest = new CloudRequest(A1OS_URL,
            new Response.Listener<String>() {
               @Override
               public void onResponse(String response) {
@@ -45,7 +45,6 @@ public final class PhoneUtil {
                   cv.put("phone", PHONENUMBER_COMPLETE);
                   cv.put("location", response);
                   db.insert("cloud_table", null, cv);
-                  db.close();
               }
         }, new Response.ErrorListener() {
               @Override
