@@ -1,6 +1,6 @@
 package com.a1os.cloud.phone;
 
-import com.a1os.cloud.request.CloudRequest;
+import com.a1os.cloud.request.APIRequest;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -36,7 +36,7 @@ public final class PhoneUtil {
 
         RequestQueue mQueue = Volley.newRequestQueue(ctx);
 
-        CloudRequest stringRequest = new CloudRequest(A1OS_URL,
+        APIRequest stringRequest = new APIRequest(A1OS_URL,
            new Response.Listener<String>() {
               @Override
               public void onResponse(String response) {
