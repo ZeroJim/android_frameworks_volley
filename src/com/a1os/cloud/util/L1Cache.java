@@ -3,7 +3,7 @@ package com.a1os.cloud.util;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class Cache<K, V> {
+public class L1Cache<K, V> {
     private final LinkedHashMap<K, V> map;
 
     private int size;
@@ -15,7 +15,7 @@ public class Cache<K, V> {
     private int hitCount;
     private int missCount;
 
-    public Cache(int maxSize) {
+    public L1Cache(int maxSize) {
         if (maxSize <= 0) {
             throw new IllegalArgumentException("maxSize <= 0");
         }
@@ -200,7 +200,7 @@ public class Cache<K, V> {
     @Override public synchronized final String toString() {
         int accesses = hitCount + missCount;
         int hitPercent = accesses != 0 ? (100 * hitCount / accesses) : 0;
-        return String.format("Cache[maxSize=%d,hits=%d,misses=%d,hitRate=%d%%]",
+        return String.format("L1Cache[maxSize=%d,hits=%d,misses=%d,hitRate=%d%%]",
                 maxSize, hitCount, missCount, hitPercent);
     }
 }
