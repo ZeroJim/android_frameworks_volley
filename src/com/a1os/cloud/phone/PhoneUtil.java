@@ -31,10 +31,6 @@ public final class PhoneUtil {
             callBack.execute(mL1Cache.get(PHONENUMBER_COMPLETE));
             return;
         }
-        if (mL2Cache.get(PHONENUMBER_COMPLETE) != null) {
-            callBack.execute(mL2Cache.get(PHONENUMBER_COMPLETE));
-            return;
-        }
 
         RequestQueue mQueue = Volley.newRequestQueue(ctx);
 
@@ -49,7 +45,9 @@ public final class PhoneUtil {
         }, new Response.ErrorListener() {
               @Override
               public void onErrorResponse(VolleyError error) {
-                  Log.e("TAG", error.getMessage(), error);
+                  if (mL2Cache.get(PHONENUMBER_COMPLETE) != null) {
+                      callBack.execute(mL2Cache.get(PHONENUMBER_COMPLETE));
+                  }
               }
         });
         mQueue.add(stringRequest);

@@ -38,7 +38,7 @@ public class L2Cache implements StringCache {
         throws IOException, FileNotFoundException {
         OutputStream out = null;
         try {
-             out = new BufferedOutputStream(editor.newOutputStream( 0 ), IO_BUFFER_SIZE);
+             out = new BufferedOutputStream(editor.newOutputStream(0), IO_BUFFER_SIZE);
              out.write(str.getBytes("UTF-8"));
              return true;
         } finally {
@@ -56,7 +56,7 @@ public class L2Cache implements StringCache {
     public void put(String key, String value) {
         DiskCache.Editor editor = null;
         try {
-             editor = mDiskCache.edit( key );
+             editor = mDiskCache.edit(key);
              if (editor == null) {
                  return;
              }
@@ -86,12 +86,12 @@ public class L2Cache implements StringCache {
              if (snapshot == null) {
                  return null;
              }
-             final InputStream in = snapshot.getInputStream( 0 );
+             final InputStream in = snapshot.getInputStream(0);
              if (in != null) {
                  final BufferedInputStream buffIn = new BufferedInputStream(in, IO_BUFFER_SIZE);
                  byte[] contents = new byte[1024];
 
-                 int bytesRead=0;
+                 int bytesRead = 0;
                  StringBuffer strFileContents=new StringBuffer(); 
                  while((bytesRead = buffIn.read(contents)) != -1){ 
                         strFileContents.append(new String(contents, 0, bytesRead));
