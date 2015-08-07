@@ -220,7 +220,10 @@ public final class PhoneUtil {
                             callBack.execute(PhoneLocation.getCityFromPhone(
                                     phoneNumber));
                             return;
-                        }
+                        } else {
+                            callBack.execute("");
+                            return;			
+			}
                     }
                 },
                 new Response.ErrorListener() {
