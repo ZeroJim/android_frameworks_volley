@@ -111,26 +111,12 @@ public final class PhoneUtil {
                             queue.remove(PHONENUMBER_COMPLETE);
                             return;
                         } else if (!TextUtils.isEmpty(getMark(response))) {
-                            Long last_time = System.currentTimeMillis();
-                            ContentValues values = new ContentValues();
-                            values.put("phone_number", PHONENUMBER_COMPLETE);
-                            values.put("phone_location", getMark(response));
-                            values.put("last_update", last_time);
-                            cr.insert(uri, values);
-                            tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, getMark(response),last_time));
+                            insertDb(PHONENUMBER_COMPLETE, getMark(response));
                         } else if (!TextUtils.isEmpty(
                                     PhoneLocation.getCityFromPhone(
                                         PHONENUMBER_COMPLETE))) {
-                            Long last_time = System.currentTimeMillis();
-                            ContentValues values = new ContentValues();
-                            values.put("phone_number", PHONENUMBER_COMPLETE);
-                            values.put("phone_location",
-                                PhoneLocation.getCityFromPhone(
+                            insertDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
                                     PHONENUMBER_COMPLETE));
-                            values.put("last_update", last_time);
-                            cr.insert(uri, values);
-                            tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, PhoneLocation.getCityFromPhone(
-                                    phoneNumber),last_time));
                         }
                     }
                 },
@@ -180,7 +166,13 @@ public final class PhoneUtil {
         }
 
         //防止多次查询
-        if(queue.contains(PHONENUMBER_COMPLETE)){
+        if (queue.contains(PHONENUMBER_COMPLETE)){
+            if (!TextUtils.isEmpty(PhoneLocation.getCityFromPhone(
+                                        PHONENUMBER_COMPLETE))) {
+                callBack.execute(PhoneLocation.getCityFromPhone(phoneNumber));
+            } else {
+                callBack.execute("");
+            }
             return;
         }
 
@@ -195,35 +187,21 @@ public final class PhoneUtil {
                             queue.remove(PHONENUMBER_COMPLETE);
                             return;
                         } else if (!TextUtils.isEmpty(getMark(response))) {
-                            Long last_time = System.currentTimeMillis();
-                            ContentValues values = new ContentValues();
-                            values.put("phone_number", PHONENUMBER_COMPLETE);
-                            values.put("phone_location", getMark(response));
-                            values.put("last_update", last_time);
-                            cr.insert(uri, values);
-                            tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, getMark(response),last_time));
+                            insertDb(PHONENUMBER_COMPLETE, getMark(response));
                             callBack.execute(getMark(response));
                             return;
                         } else if (!TextUtils.isEmpty(
                                     PhoneLocation.getCityFromPhone(
                                         PHONENUMBER_COMPLETE))) {
-                            Long last_time = System.currentTimeMillis();
-                            ContentValues values = new ContentValues();
-                            values.put("phone_number", PHONENUMBER_COMPLETE);
-                            values.put("phone_location",
-                                PhoneLocation.getCityFromPhone(
+                            insertDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
                                     PHONENUMBER_COMPLETE));
-                            values.put("last_update", last_time);
-                            cr.insert(uri, values);
-                            tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, PhoneLocation.getCityFromPhone(
-                                    phoneNumber),last_time));
                             callBack.execute(PhoneLocation.getCityFromPhone(
                                     phoneNumber));
                             return;
                         } else {
                             callBack.execute("");
-                            return;			
-			}
+                            return;
+                        }
                     }
                 },
                 new Response.ErrorListener() {
@@ -257,26 +235,12 @@ public final class PhoneUtil {
                         if ("e".equals(getMark(response))) {
                             return;
                         } else if (!TextUtils.isEmpty(getMark(response))) {
-                            Long last_time = System.currentTimeMillis();
-                            ContentValues values = new ContentValues();
-                            values.put("phone_number", phoneNumber);
-                            values.put("phone_location", getMark(response));
-                            values.put("last_update", last_time);
-                            cr.update(uri, values, "phone_number=?", new String[] { phoneNumber });
-                            tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, getMark(response),last_time));
+                            updateDb(phoneNumber, getMark(response));
                         } else if (!TextUtils.isEmpty(
                                     PhoneLocation.getCityFromPhone(
                                         phoneNumber))) {
-                            Long last_time = System.currentTimeMillis();
-                            ContentValues values = new ContentValues();
-                            values.put("phone_number", phoneNumber);
-                            values.put("phone_location",
-                                PhoneLocation.getCityFromPhone(
+                            updateDb(phoneNumber, PhoneLocation.getCityFromPhone(
                                     phoneNumber));
-                            values.put("last_update", last_time);
-                            tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, PhoneLocation.getCityFromPhone(
-                                    phoneNumber),last_time));
-                            cr.update(uri, values, "phone_number=?", new String[] { phoneNumber });
                         }
                     }
                 },
@@ -348,6 +312,26 @@ public final class PhoneUtil {
         } finally {
             c.close();
         }
+    }
+
+    public static void insertDb (String phoneNumber, String location) {
+        Long last_time = System.currentTimeMillis();
+        ContentValues values = new ContentValues();
+        values.put("phone_number", phoneNumber);
+        values.put("phone_location", location);
+        values.put("last_update", last_time);
+        cr.insert(uri, values);
+        tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, location, last_time));
+    }
+
+    public static void updateDb (String phoneNumber, String location) {
+        Long last_time = System.currentTimeMillis();
+        ContentValues values = new ContentValues();
+        values.put("phone_number", phoneNumber);
+        values.put("phone_location", location);
+        values.put("last_update", last_time);
+        cr.update(uri, values, "phone_number=?", new String[] { phoneNumber });
+        tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, location, last_time));
     }
 
     public static boolean isWifi() {
