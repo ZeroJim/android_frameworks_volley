@@ -34,7 +34,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.Volley;
-import android.os.SystemProperties;
+import com.android.volley.DefaultRetryPolicy;
 
 import android.net.wifi.WifiManager;
 
@@ -49,14 +49,15 @@ import java.util.Map;
 
 
 public final class PhoneUtil {
-    static StringBuilder MARK_API = new StringBuilder();
-    static String AUTHORITY = "content://com.suda.provider.PhoneLocation/phonelocation";
-    static ContentResolver cr;
-    static Context ct;
-    static Uri uri;
-    static RequestQueue mQueue;
-    static List<String> queue;
-    static Map<String,PhoneLocationBean> tmpPhoneMap;
+    private static StringBuffer MARK_API;
+    private static String AUTHORITY = "content://com.suda.provider.PhoneLocation/phonelocation";
+    private static ContentResolver cr;
+    private static Context ct;
+    private static Uri uri;
+    private static RequestQueue mQueue;
+    private static List<String> queue;
+    private static Map<String,PhoneLocationBean> tmpPhoneMap;
+    private static PhoneUtil mPu;
 
     static{
         System.loadLibrary("markapi");
@@ -64,23 +65,30 @@ public final class PhoneUtil {
 
     static native String getMarkApi();
 
-    public PhoneUtil(Context ct) {
+    public static synchronized PhoneUtil getPhoneUtil(Context ct){
+        if(mPu == null) {
+            mPu = new PhoneUtil(ct);
+        }
+        return mPu;
+    }
+
+    private PhoneUtil(Context ct) {
         this.ct = ct.getApplicationContext();
-        cr = ct.getContentResolver();
-        uri = Uri.parse(AUTHORITY);
-        mQueue = Volley.newRequestQueue(ct);
-        queue = new ArrayList<>();
-        tmpPhoneMap = new HashMap<String, PhoneLocationBean>();
+        this.cr = ct.getContentResolver();
+        this.uri = Uri.parse(AUTHORITY);
+        this.mQueue = Volley.newRequestQueue(ct);
+        this.queue = new ArrayList<>();
+        this.MARK_API = new StringBuffer();
+        this.tmpPhoneMap = new HashMap<String, PhoneLocationBean>();
         initData();
     }
 
-    public static String getLocalNumberInfo(final String phoneNumber) {
+    public static synchronized String getLocalNumberInfo(final String phoneNumber) {
         final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "");
         MARK_API.setLength(0);
         MARK_API.append(getMarkApi())
-                                        .append(PHONENUMBER_COMPLETE)
-                                        .append("&type=json&callback=show")
-                                        .toString();
+                .append(PHONENUMBER_COMPLETE)
+                .append("&type=json&callback=show");
 
         //第一步查内存
         if (tmpPhoneMap.get(PHONENUMBER_COMPLETE) != null) {
@@ -91,7 +99,7 @@ public final class PhoneUtil {
         }
 
         //第二步查本地，防止一个应用插入本地后，另一个应用再次插入
-        if (getLocation(PHONENUMBER_COMPLETE)){
+        if (getLocalData(PHONENUMBER_COMPLETE)){
             return tmpPhoneMap.get(PHONENUMBER_COMPLETE).getLocation();
         }
 
@@ -131,14 +139,13 @@ public final class PhoneUtil {
         return PhoneLocation.getCityFromPhone(PHONENUMBER_COMPLETE);
     }
 
-    public static void getNumberInfoOnline(final String phoneNumber,
+    public static void getOnlineNumberInfo(final String phoneNumber,
         final CallBack callBack) {
         final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "");
         MARK_API.setLength(0);
         MARK_API.append(getMarkApi())
-                                        .append(PHONENUMBER_COMPLETE)
-                                        .append("&type=json&callback=show")
-                                        .toString();
+                .append(PHONENUMBER_COMPLETE)
+                .append("&type=json&callback=show");
 
         //第一步查内存
         if (tmpPhoneMap.get(PHONENUMBER_COMPLETE) != null) {
@@ -150,7 +157,7 @@ public final class PhoneUtil {
         }
 
         //第二步查本地，防止一个应用插入本地后，另一个应用再次插入
-        if (getLocation(PHONENUMBER_COMPLETE, callBack)){
+        if (getLocalData(PHONENUMBER_COMPLETE, callBack)){
             return;
         }
 
@@ -218,7 +225,7 @@ public final class PhoneUtil {
                         }
                     }
                 });
-
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(1500, 1, 1.0f));
         mQueue.add(stringRequest);
     }
 
@@ -231,7 +238,6 @@ public final class PhoneUtil {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        //callBack.execute(response);
                         if ("e".equals(getMark(response))) {
                             return;
                         } else if (!TextUtils.isEmpty(getMark(response))) {
@@ -254,30 +260,39 @@ public final class PhoneUtil {
         mQueue.add(stringRequest);
     }
 
-    public static boolean getLocation(String phoneNumber, CallBack callBack) {
-        Cursor c = cr.query(uri, null, "phone_number=?",
-                new String[] { phoneNumber }, null);
-        boolean have = c.moveToFirst();
+    public static boolean getLocalData(String phoneNumber, CallBack callBack) {
+        Cursor c = null;
+        boolean have = false;
         try {
-             tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3)));
-             callBack.execute(c.getString(2));
+            c = cr.query(uri, null, "phone_number=?",
+                new String[] { phoneNumber }, null);
+            have = c.moveToFirst();
+            tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3)));
+            callBack.execute(c.getString(2));
         } catch (Exception e) {
- 
+            e.printStackTrace(); 
         } finally {
+            if (c != null) {
             c.close();
+            }
         }
         return have;
     }
 
-    public static boolean getLocation(String phoneNumber) {
-        Cursor c = cr.query(uri, null, "phone_number=?",
-                new String[] { phoneNumber }, null);
-        boolean have = c.moveToFirst();
+    public static boolean getLocalData(String phoneNumber) {
+        Cursor c = null;
+        boolean have = false;
         try {
-             tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3)));
+            c = cr.query(uri, null, "phone_number=?",
+                new String[] { phoneNumber }, null);
+            have = c.moveToFirst();
+            tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3)));
         } catch (Exception e) {
+            e.printStackTrace();
         } finally {
+            if (c != null) {
             c.close();
+            }
         }
         return have;
     }
@@ -301,16 +316,19 @@ public final class PhoneUtil {
     }
 
     public static void initData() {
-        Cursor c = cr.query(uri, null, null,
-                null, null);
+        Cursor c = null;
         try {
-         while(c.moveToNext()) {
-             tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3)));
-         }
+            c = cr.query(uri, null, null,
+                null, null);
+            while(c.moveToNext()) {
+                tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3)));
+            }
         } catch (Exception e) {
- 
+            e.printStackTrace();
         } finally {
+            if (c != null) {
             c.close();
+            }
         }
     }
 
