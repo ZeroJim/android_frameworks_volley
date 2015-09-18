@@ -36,7 +36,9 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.Volley;
 import com.android.volley.DefaultRetryPolicy;
 
-import android.net.wifi.WifiManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,9 +122,7 @@ public final class PhoneUtil {
                             return;
                         } else if (!TextUtils.isEmpty(getMark(response))) {
                             insertDb(PHONENUMBER_COMPLETE, getMark(response));
-                        } else if (!TextUtils.isEmpty(
-                                    PhoneLocation.getCityFromPhone(
-                                        PHONENUMBER_COMPLETE))) {
+                        } else {
                             insertDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
                                     PHONENUMBER_COMPLETE));
                         }
@@ -161,8 +161,8 @@ public final class PhoneUtil {
             return;
         }
 
-        //wifi状态才查询网络
-        if(!isWifi()) {
+        //wifi状态并且可以访问网络才查询网络
+        if(!isWiFiActive()) {
             if (!TextUtils.isEmpty(PhoneLocation.getCityFromPhone(
                                         PHONENUMBER_COMPLETE))) {
                 callBack.execute(PhoneLocation.getCityFromPhone(phoneNumber));
@@ -194,19 +194,14 @@ public final class PhoneUtil {
                             queue.remove(PHONENUMBER_COMPLETE);
                             return;
                         } else if (!TextUtils.isEmpty(getMark(response))) {
-                            insertDb(PHONENUMBER_COMPLETE, getMark(response));
                             callBack.execute(getMark(response));
-                            return;
-                        } else if (!TextUtils.isEmpty(
-                                    PhoneLocation.getCityFromPhone(
-                                        PHONENUMBER_COMPLETE))) {
-                            insertDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
-                                    PHONENUMBER_COMPLETE));
-                            callBack.execute(PhoneLocation.getCityFromPhone(
-                                    phoneNumber));
+                            insertDb(PHONENUMBER_COMPLETE, getMark(response));
                             return;
                         } else {
-                            callBack.execute("");
+                            callBack.execute(PhoneLocation.getCityFromPhone(
+                                    phoneNumber));
+                            insertDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
+                                    PHONENUMBER_COMPLETE));
                             return;
                         }
                     }
@@ -214,23 +209,14 @@ public final class PhoneUtil {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
+                        callBack.execute(PhoneLocation.getCityFromPhone(
+                                PHONENUMBER_COMPLETE));
                         queue.remove(PHONENUMBER_COMPLETE);
-                        if (tmpPhoneMap.get(PHONENUMBER_COMPLETE)!=null) {
-                            callBack.execute(tmpPhoneMap.get(PHONENUMBER_COMPLETE).getLocation());
-                            return;
-                        } else {
-                            callBack.execute(PhoneLocation.getCityFromPhone(
-                                    PHONENUMBER_COMPLETE));
-                            return;
-                        }
+                        return;
                     }
                 });
         stringRequest.setRetryPolicy(new DefaultRetryPolicy(1500, 1, 1.0f));
         mQueue.add(stringRequest);
-    }
-
-    public static boolean isNeedToUpdate(String phoneNumber) {
-        return tmpPhoneMap.get(phoneNumber).getLast_update() + 86400000 * 3 < System.currentTimeMillis();
     }
 
     public static void update(final String phoneNumber, String url) {
@@ -273,7 +259,7 @@ public final class PhoneUtil {
             e.printStackTrace(); 
         } finally {
             if (c != null) {
-            c.close();
+                c.close();
             }
         }
         return have;
@@ -291,7 +277,7 @@ public final class PhoneUtil {
             e.printStackTrace();
         } finally {
             if (c != null) {
-            c.close();
+                c.close();
             }
         }
         return have;
@@ -318,16 +304,18 @@ public final class PhoneUtil {
     public static void initData() {
         Cursor c = null;
         try {
-            c = cr.query(uri, null, null,
+            //长时间未使用的数据初始化的时候不加入缓存 (>3天)
+            c = cr.query(uri, null, "last_update > " + (System.currentTimeMillis() - 86400000 * 3),
                 null, null);
             while(c.moveToNext()) {
                 tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3)));
             }
+            Log.d("INIT:locationdata.size:", tmpPhoneMap.size()+"");
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             if (c != null) {
-            c.close();
+                c.close();
             }
         }
     }
@@ -352,10 +340,25 @@ public final class PhoneUtil {
         tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, location, last_time));
     }
 
-    public static boolean isWifi() {
-        WifiManager mWifiManager = (WifiManager) ct
-                .getSystemService(Context.WIFI_SERVICE);
-        return mWifiManager.getWifiState() == WifiManager.WIFI_STATE_ENABLED;
+    public static boolean isWiFiActive() {
+        ConnectivityManager connectivity = (ConnectivityManager) ct
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivity != null) {
+            NetworkInfo[] info = connectivity.getAllNetworkInfo();
+            if (info != null) {
+                for (int i = 0; i < info.length; i++) {
+                    if (info[i].getType() == ConnectivityManager.TYPE_WIFI 
+                        && info[i].isConnected()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public static boolean isNeedToUpdate(String phoneNumber) {
+        return tmpPhoneMap.get(phoneNumber).getLast_update() + 86400000 * 3 < System.currentTimeMillis();
     }
 
     public interface CallBack {
