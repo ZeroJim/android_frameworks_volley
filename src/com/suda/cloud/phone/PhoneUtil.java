@@ -120,11 +120,14 @@ public final class PhoneUtil {
                         if ("e".equals(getMark(response))) {
                             queue.remove(PHONENUMBER_COMPLETE);
                             return;
-                        } else if (!TextUtils.isEmpty(getMark(response))) {
-                            insertDb(PHONENUMBER_COMPLETE, getMark(response));
                         } else {
-                            insertDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
-                                    PHONENUMBER_COMPLETE));
+                            if (!TextUtils.isEmpty(getMark(response))) {
+                                insertDb(PHONENUMBER_COMPLETE, getMark(response), getMarkType(getMark(response)));
+                            } else {
+                                insertDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
+                                        PHONENUMBER_COMPLETE),MARK_TYPE_NONE);
+                            }
+                            queue.remove(PHONENUMBER_COMPLETE);
                         }
                     }
                 },
@@ -150,9 +153,6 @@ public final class PhoneUtil {
         //第一步查内存
         if (tmpPhoneMap.get(PHONENUMBER_COMPLETE) != null) {
             callBack.execute(tmpPhoneMap.get(PHONENUMBER_COMPLETE).getLocation());
-            if(isNeedToUpdate(PHONENUMBER_COMPLETE)) {
-                update(PHONENUMBER_COMPLETE,MARK_API.toString());
-            }
             return;
         }
 
@@ -163,23 +163,13 @@ public final class PhoneUtil {
 
         //wifi状态并且可以访问网络才查询网络
         if(!isWiFiActive()) {
-            if (!TextUtils.isEmpty(PhoneLocation.getCityFromPhone(
-                                        PHONENUMBER_COMPLETE))) {
-                callBack.execute(PhoneLocation.getCityFromPhone(phoneNumber));
-            } else {
-                callBack.execute("");
-            }
+            callBack.execute(PhoneLocation.getCityFromPhone(PHONENUMBER_COMPLETE));
             return;
         }
 
         //防止多次查询
         if (queue.contains(PHONENUMBER_COMPLETE)){
-            if (!TextUtils.isEmpty(PhoneLocation.getCityFromPhone(
-                                        PHONENUMBER_COMPLETE))) {
-                callBack.execute(PhoneLocation.getCityFromPhone(phoneNumber));
-            } else {
-                callBack.execute("");
-            }
+            callBack.execute(PhoneLocation.getCityFromPhone(PHONENUMBER_COMPLETE));
             return;
         }
 
@@ -193,16 +183,20 @@ public final class PhoneUtil {
                             callBack.execute("");
                             queue.remove(PHONENUMBER_COMPLETE);
                             return;
-                        } else if (!TextUtils.isEmpty(getMark(response))) {
-                            callBack.execute(getMark(response));
-                            insertDb(PHONENUMBER_COMPLETE, getMark(response));
-                            return;
                         } else {
-                            callBack.execute(PhoneLocation.getCityFromPhone(
-                                    phoneNumber));
-                            insertDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
-                                    PHONENUMBER_COMPLETE));
-                            return;
+                            if (!TextUtils.isEmpty(getMark(response))) {
+                                callBack.execute(getMark(response));
+                                insertDb(PHONENUMBER_COMPLETE, getMark(response), getMarkType(getMark(response)));
+                                queue.remove(PHONENUMBER_COMPLETE);
+                                return;
+                            } else {
+                                callBack.execute(PhoneLocation.getCityFromPhone(
+                                        phoneNumber));
+                                insertDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
+                                        PHONENUMBER_COMPLETE), MARK_TYPE_NONE);
+                                queue.remove(PHONENUMBER_COMPLETE);
+                                return;
+                            }
                         }
                     }
                 },
@@ -219,20 +213,30 @@ public final class PhoneUtil {
         mQueue.add(stringRequest);
     }
 
-    public static void update(final String phoneNumber, String url) {
+    public static void customMark(String phoneNumber, String mark,int markType) {
+        final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "");
+        if(TextUtils.isEmpty(mark)) {
+            updateDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
+                     PHONENUMBER_COMPLETE), MARK_TYPE_CUSTOM_EMPTY, true);
+            return;
+        }
+        updateDb(PHONENUMBER_COMPLETE, mark, markType, false);
+    }
+
+    private static void update(final String phoneNumber, String url) {
         APIRequest stringRequest = new APIRequest(url,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
                         if ("e".equals(getMark(response))) {
                             return;
-                        } else if (!TextUtils.isEmpty(getMark(response))) {
-                            updateDb(phoneNumber, getMark(response));
-                        } else if (!TextUtils.isEmpty(
-                                    PhoneLocation.getCityFromPhone(
-                                        phoneNumber))) {
-                            updateDb(phoneNumber, PhoneLocation.getCityFromPhone(
-                                    phoneNumber));
+                        } else {
+                            if (!TextUtils.isEmpty(getMark(response))) {
+                                updateDb(phoneNumber, getMark(response), getMarkType(getMark(response)), true);
+                            } else {
+                                updateDb(phoneNumber, PhoneLocation.getCityFromPhone(
+                                        phoneNumber), MARK_TYPE_NONE, true);
+                            }
                         }
                     }
                 },
@@ -246,14 +250,14 @@ public final class PhoneUtil {
         mQueue.add(stringRequest);
     }
 
-    public static boolean getLocalData(String phoneNumber, CallBack callBack) {
+    private static boolean getLocalData(String phoneNumber, CallBack callBack) {
         Cursor c = null;
         boolean have = false;
         try {
             c = cr.query(uri, null, "phone_number=?",
                 new String[] { phoneNumber }, null);
             have = c.moveToFirst();
-            tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3)));
+            tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3), c.getInt(4)));
             callBack.execute(c.getString(2));
         } catch (Exception e) {
             e.printStackTrace(); 
@@ -265,14 +269,14 @@ public final class PhoneUtil {
         return have;
     }
 
-    public static boolean getLocalData(String phoneNumber) {
+    private static boolean getLocalData(String phoneNumber) {
         Cursor c = null;
         boolean have = false;
         try {
             c = cr.query(uri, null, "phone_number=?",
                 new String[] { phoneNumber }, null);
             have = c.moveToFirst();
-            tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3)));
+            tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3), c.getInt(4)));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -283,7 +287,7 @@ public final class PhoneUtil {
         return have;
     }
 
-    public static String getMark(String response) {
+    private static String getMark(String response) {
         try {
             JSONObject jo = new JSONObject(response.subSequence(5,
                         response.length() - 1).toString());
@@ -301,14 +305,14 @@ public final class PhoneUtil {
 
     }
 
-    public static void initData() {
+    private static void initData() {
         Cursor c = null;
         try {
             //长时间未使用的数据初始化的时候不加入缓存 (>3天)
             c = cr.query(uri, null, "last_update > " + (System.currentTimeMillis() - 86400000 * 3),
                 null, null);
             while(c.moveToNext()) {
-                tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3)));
+                tmpPhoneMap.put(c.getString(1), new PhoneLocationBean(c.getString(1), c.getString(2), c.getLong(3), c.getInt(4)));
             }
             Log.d("INIT:locationdata.size:", tmpPhoneMap.size()+"");
         } catch (Exception e) {
@@ -320,24 +324,26 @@ public final class PhoneUtil {
         }
     }
 
-    public static void insertDb (String phoneNumber, String location) {
+    private static void insertDb (String phoneNumber, String location, int markType) {
         Long last_time = System.currentTimeMillis();
         ContentValues values = new ContentValues();
         values.put("phone_number", phoneNumber);
         values.put("phone_location", location);
         values.put("last_update", last_time);
+        values.put("mark_type", markType);
         cr.insert(uri, values);
-        tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, location, last_time));
+        tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, location, last_time, markType));
     }
 
-    public static void updateDb (String phoneNumber, String location) {
-        Long last_time = System.currentTimeMillis();
+    private static void updateDb (String phoneNumber, String location, int markType, boolean needUpdate) {
+        Long last_time = needUpdate ? System.currentTimeMillis() : -1;
         ContentValues values = new ContentValues();
         values.put("phone_number", phoneNumber);
         values.put("phone_location", location);
         values.put("last_update", last_time);
+        values.put("mark_type", markType);
         cr.update(uri, values, "phone_number=?", new String[] { phoneNumber });
-        tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, location, last_time));
+        tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, location, last_time, markType));
     }
 
     public static boolean isWiFiActive() {
@@ -357,9 +363,29 @@ public final class PhoneUtil {
         return false;
     }
 
-    public static boolean isNeedToUpdate(String phoneNumber) {
-        return tmpPhoneMap.get(phoneNumber).getLast_update() + 86400000 * 3 < System.currentTimeMillis();
+    private static boolean isNeedToUpdate(String phoneNumber) {
+        return ((tmpPhoneMap.get(phoneNumber).getLastUpdateAt() + 86400000 * 3 < System.currentTimeMillis()) &&
+                (tmpPhoneMap.get(phoneNumber).getLastUpdateAt() !=-1)) ||
+                (tmpPhoneMap.get(phoneNumber).getMarkType() == MARK_TYPE_CUSTOM_EMPTY);
     }
+
+    private static int getMarkType (String mark) {
+        if ("骚扰电话".equals(mark))
+            return MARK_TYPE_CRANK_CALL;
+        if ("诈骗电话".equals(mark))
+            return MARK_TYPE_FRAUD_CALL;
+        if ("广告推销".equals(mark))
+            return MARK_TYPE_ADV_CALL;
+        return MARK_TYPE_COMMON;
+    }
+
+    private final static int MARK_TYPE_CUSTOM_EMPTY = -1;        //自定义为空
+    private final static int MARK_TYPE_NONE = 0;                 //无标记
+    private final static int MARK_TYPE_CUSTOM = 1;               //自定义
+    private final static int MARK_TYPE_COMMON = 2;               //普通，未分类
+    private final static int MARK_TYPE_CRANK_CALL = 3;           //骚扰电话
+    private final static int MARK_TYPE_FRAUD_CALL = 4;           //诈骗电话
+    private final static int MARK_TYPE_ADV_CALL = 5;             //广告推销
 
     public interface CallBack {
         void execute(String response);
