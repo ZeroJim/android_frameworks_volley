@@ -20,13 +20,15 @@ public class PhoneLocationBean {
 
     private String number;
     private String location;
-    private Long last_update;
+    private int markType;
+    private Long lastUpdateAt;
 
-    public PhoneLocationBean(String number, String location, Long last_update) {
+    public PhoneLocationBean(String number, String location, Long lastUpdateAt, int markType) {
         super();
         this.number = number;
         this.location = location;
-        this.last_update = last_update;
+        this.lastUpdateAt = lastUpdateAt;
+        this.markType = markType;
     }
 
     public String getNumber() {
@@ -45,12 +47,20 @@ public class PhoneLocationBean {
         this.location = location;
     }
 
-    public Long getLast_update() {
-        return last_update;
+    public Long getLastUpdateAt() {
+        return lastUpdateAt;
     }
 
-    public void setLast_update(Long last_update) {
-        this.last_update = last_update;
+    public void setLastUpdateAt(Long lastUpdateAt) {
+        this.lastUpdateAt = lastUpdateAt;
+    }
+
+    public int getMarkType() {
+        return markType;
+    }
+
+    public void setMarkType(int markType) {
+        this.markType = markType;
     }
 
 }
