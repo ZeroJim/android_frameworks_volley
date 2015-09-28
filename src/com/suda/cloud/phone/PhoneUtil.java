@@ -86,6 +86,10 @@ public final class PhoneUtil {
     }
 
     public static synchronized String getLocalNumberInfo(final String phoneNumber) {
+        return getLocalNumberInfo(phoneNumber, true);
+    }
+
+    public static synchronized String getLocalNumberInfo(final String phoneNumber, boolean userMapCache) {
         final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "");
         MARK_API.setLength(0);
         MARK_API.append(getMarkApi())
@@ -93,7 +97,7 @@ public final class PhoneUtil {
                 .append("&type=json&callback=show");
 
         //第一步查内存
-        if (tmpPhoneMap.get(PHONENUMBER_COMPLETE) != null) {
+        if (tmpPhoneMap.get(PHONENUMBER_COMPLETE) != null && userMapCache) {
             if(isNeedToUpdate(PHONENUMBER_COMPLETE)) {
                 update(PHONENUMBER_COMPLETE,MARK_API.toString());
             }
