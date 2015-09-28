@@ -127,7 +127,6 @@ public final class PhoneUtil {
                                 insertDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
                                         PHONENUMBER_COMPLETE),MARK_TYPE_NONE);
                             }
-                            queue.remove(PHONENUMBER_COMPLETE);
                         }
                     }
                 },
@@ -187,14 +186,12 @@ public final class PhoneUtil {
                             if (!TextUtils.isEmpty(getMark(response))) {
                                 callBack.execute(getMark(response));
                                 insertDb(PHONENUMBER_COMPLETE, getMark(response), getMarkType(getMark(response)));
-                                queue.remove(PHONENUMBER_COMPLETE);
                                 return;
                             } else {
                                 callBack.execute(PhoneLocation.getCityFromPhone(
                                         phoneNumber));
                                 insertDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
                                         PHONENUMBER_COMPLETE), MARK_TYPE_NONE);
-                                queue.remove(PHONENUMBER_COMPLETE);
                                 return;
                             }
                         }
@@ -333,6 +330,7 @@ public final class PhoneUtil {
         values.put("mark_type", markType);
         cr.insert(uri, values);
         tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, location, last_time, markType));
+        queue.remove(phoneNumber);
     }
 
     private static void updateDb (String phoneNumber, String location, int markType, boolean needUpdate) {
@@ -365,7 +363,7 @@ public final class PhoneUtil {
 
     private static boolean isNeedToUpdate(String phoneNumber) {
         return ((tmpPhoneMap.get(phoneNumber).getLastUpdateAt() + 86400000 * 3 < System.currentTimeMillis()) &&
-                (tmpPhoneMap.get(phoneNumber).getLastUpdateAt() !=-1)) ||
+                (tmpPhoneMap.get(phoneNumber).getLastUpdateAt() != -1)) ||
                 (tmpPhoneMap.get(phoneNumber).getMarkType() == MARK_TYPE_CUSTOM_EMPTY);
     }
 
