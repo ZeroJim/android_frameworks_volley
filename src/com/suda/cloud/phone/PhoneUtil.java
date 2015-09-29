@@ -216,12 +216,21 @@ public final class PhoneUtil {
 
     public static void customMark(String phoneNumber, String mark,int markType) {
         final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "");
-        if(TextUtils.isEmpty(mark)) {
-            updateDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
-                     PHONENUMBER_COMPLETE), MARK_TYPE_CUSTOM_EMPTY, true);
-            return;
+        if (TextUtils.isEmpty(mark)) {
+            if (getLocalData(PHONENUMBER_COMPLETE)){
+                updateDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
+                         PHONENUMBER_COMPLETE), MARK_TYPE_CUSTOM_EMPTY, true);
+            } else {
+                insertDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
+                         PHONENUMBER_COMPLETE), MARK_TYPE_CUSTOM_EMPTY, true);
+            }
+        } else {
+            if (getLocalData(PHONENUMBER_COMPLETE)){
+                updateDb(PHONENUMBER_COMPLETE, mark, markType, false);
+            } else {
+                insertDb(PHONENUMBER_COMPLETE, mark, markType, false);
+            }
         }
-        updateDb(PHONENUMBER_COMPLETE, mark, markType, false);
     }
 
     private static void update(final String phoneNumber, String url) {
@@ -326,7 +335,12 @@ public final class PhoneUtil {
     }
 
     private static void insertDb (String phoneNumber, String location, int markType) {
-        Long last_time = System.currentTimeMillis();
+        insertDb(phoneNumber, location, markType, true);
+        queue.remove(phoneNumber);
+    }
+
+    private static void insertDb (String phoneNumber, String location, int markType, boolean needUpdate) {
+        Long last_time = needUpdate ? System.currentTimeMillis() : -1;
         ContentValues values = new ContentValues();
         values.put("phone_number", phoneNumber);
         values.put("phone_location", location);
@@ -334,7 +348,6 @@ public final class PhoneUtil {
         values.put("mark_type", markType);
         cr.insert(uri, values);
         tmpPhoneMap.put(phoneNumber, new PhoneLocationBean(phoneNumber, location, last_time, markType));
-        queue.remove(phoneNumber);
     }
 
     private static void updateDb (String phoneNumber, String location, int markType, boolean needUpdate) {
