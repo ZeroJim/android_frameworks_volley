@@ -90,7 +90,7 @@ public final class PhoneUtil {
     }
 
     public static synchronized String getLocalNumberInfo(final String phoneNumber, boolean userMapCache) {
-        final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "");
+        final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "").replace("+86","");
         MARK_API.setLength(0);
         MARK_API.append(getMarkApi())
                 .append(PHONENUMBER_COMPLETE)
@@ -147,7 +147,7 @@ public final class PhoneUtil {
 
     public static void getOnlineNumberInfo(final String phoneNumber,
         final CallBack callBack) {
-        final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "");
+        final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "").replace("+86","");
         MARK_API.setLength(0);
         MARK_API.append(getMarkApi())
                 .append(PHONENUMBER_COMPLETE)
@@ -215,7 +215,7 @@ public final class PhoneUtil {
     }
 
     public static void customMark(String phoneNumber, String mark,int markType) {
-        final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "");
+        final String PHONENUMBER_COMPLETE = phoneNumber.replaceAll("(?:-| )", "").replace("+86","");
         if (TextUtils.isEmpty(mark)) {
             if (getLocalData(PHONENUMBER_COMPLETE)){
                 updateDb(PHONENUMBER_COMPLETE, PhoneLocation.getCityFromPhone(
