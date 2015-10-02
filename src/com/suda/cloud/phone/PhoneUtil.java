@@ -35,6 +35,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.Volley;
 import com.android.volley.DefaultRetryPolicy;
+import android.provider.Settings;
 
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -152,6 +153,15 @@ public final class PhoneUtil {
         MARK_API.append(getMarkApi())
                 .append(PHONENUMBER_COMPLETE)
                 .append("&type=json&callback=show");
+
+        boolean useCloudMark =  Settings.System.getInt(
+                ct.getContentResolver(), Settings.System.USE_CLOUD_MARK, 0) == 1;
+
+
+        if(!useCloudMark) {
+            callBack.execute("");
+            return;
+        }
 
         //第一步查内存
         if (tmpPhoneMap.get(PHONENUMBER_COMPLETE) != null) {
