@@ -16,17 +16,19 @@
 
 package com.suda.cloud.phone;
 
-public class PhoneLocationBean {
+public class PhoneInfoBean {
 
     private String number;
-    private String location;
-    private Long last_update;
+    private String phoneMark;
+    private int markType;
+    private Long lastUpdateAt;
 
-    public PhoneLocationBean(String number, String location, Long last_update) {
+    public PhoneInfoBean(String number, String phoneMark, Long lastUpdateAt, int markType) {
         super();
         this.number = number;
-        this.location = location;
-        this.last_update = last_update;
+        this.phoneMark = phoneMark;
+        this.lastUpdateAt = lastUpdateAt;
+        this.markType = markType;
     }
 
     public String getNumber() {
@@ -37,20 +39,28 @@ public class PhoneLocationBean {
         this.number = number;
     }
 
-    public String getLocation() {
-        return location;
+    public String getPhoneMark() {
+        return phoneMark;
     }
 
-    public void setLocation(String location) {
-        this.location = location;
+    public void setPhoneMark(String phoneMark) {
+        this.phoneMark = phoneMark;
     }
 
-    public Long getLast_update() {
-        return last_update;
+    public Long getLastUpdateAt() {
+        return lastUpdateAt;
     }
 
-    public void setLast_update(Long last_update) {
-        this.last_update = last_update;
+    public void setLastUpdateAt(Long lastUpdateAt) {
+        this.lastUpdateAt = lastUpdateAt;
+    }
+
+    public int getMarkType() {
+        return markType;
+    }
+
+    public void setMarkType(int markType) {
+        this.markType = markType;
     }
 
 }
